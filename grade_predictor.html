@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Final Grade Predictor</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #4f46e5;
+  --primary-light: #818cf8;
+  --bg: #eef2ff;
+  --card: #ffffff;
+  --text: #1e1b4b;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  padding: 40px 24px 36px;
+  text-align: center;
+}
+.header-icon { font-size: 2.8rem; display: block; margin-bottom: 10px; }
+.header h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
+.header p  { font-size: 0.88rem; opacity: 0.85; max-width: 380px; margin: 0 auto; line-height: 1.6; }
+.header p strong { background: rgba(255,255,255,0.2); border-radius: 4px; padding: 0 5px; }
+
+/* Container */
+.container { max-width: 680px; margin: 0 auto; padding: 24px 16px 0; }
+
+/* Section card */
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 14px rgba(79,70,229,0.07);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 20px 13px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.card-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.15rem; flex-shrink: 0;
+}
+.ic-purple { background: #ede9fe; }
+.ic-teal   { background: #d1fae5; }
+.ic-blue   { background: #dbeafe; }
+.ic-orange { background: #ffedd5; }
+.ic-red    { background: #fee2e2; }
+.ic-gold   { background: #fef3c7; }
+.ic-indigo { background: #e0e7ff; }
+
+.card-title h2   { font-size: 0.95rem; font-weight: 700; }
+.card-title .sub { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+
+.card-body { padding: 10px 20px 16px; }
+
+/* Input rows */
+.row {
+  display: flex; align-items: center;
+  gap: 10px; padding: 9px 0;
+  border-bottom: 1px solid #f9fafb;
+}
+.row:last-of-type { border-bottom: none; }
+.row label { flex: 1; font-size: 0.875rem; color: #374151; }
+.row .pct  { font-size: 0.73rem; color: #b0b7c3; min-width: 38px; text-align: right; }
+
+.score-input {
+  width: 74px; height: 38px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 9px;
+  text-align: center;
+  font-size: 0.9rem; font-weight: 600;
+  outline: none;
+  background: #f9fafb; color: var(--text);
+  transition: border-color 0.18s, background 0.18s;
+}
+.score-input:focus  { border-color: var(--primary); background: white; }
+.score-input.est    { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
+
+.hint { font-size: 0.73rem; color: #b0b7c3; margin-top: 6px; padding-left: 2px; }
+
+/* Grade target buttons */
+.grade-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.gb {
+  padding: 8px 15px; border-radius: 10px;
+  border: 2px solid #e5e7eb;
+  background: white; color: #374151;
+  font-size: 0.9rem; font-weight: 700; cursor: pointer;
+  transition: all 0.15s;
+}
+.gb:hover  { border-color: var(--primary-light); color: var(--primary); background: #eef2ff; }
+.gb.active { border-color: var(--primary); background: var(--primary); color: white; }
+
+.section-label {
+  font-size: 0.72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: #9ca3af; margin: 14px 0 10px;
+}
+
+/* Calc button */
+.calc-btn {
+  width: 100%; padding: 15px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white; border: none; border-radius: 14px;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: opacity 0.18s, transform 0.1s; margin-top: 4px;
+}
+.calc-btn:hover  { opacity: 0.91; }
+.calc-btn:active { transform: scale(0.98); }
+
+/* Results */
+#results { display: none; margin-top: 20px; }
+
+/* Progress */
+.prog-wrap { margin-bottom: 4px; }
+.prog-labels { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--muted); margin-bottom: 7px; }
+.prog-bg   { height: 10px; background: #e5e7eb; border-radius: 99px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #4f46e5, #a78bfa); transition: width 0.8s cubic-bezier(.34,1.56,.64,1); }
+
+/* Grade big display */
+.grade-display { display: flex; align-items: center; gap: 20px; background: #f5f7ff; border-radius: 12px; padding: 18px 20px; margin-bottom: 12px; }
+.big-grade { font-size: 4rem; font-weight: 900; line-height: 1; min-width: 75px; text-align: center; }
+.grade-meta .pts   { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+.grade-meta .label { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+.gA  { color: #059669; } .gAm { color: #10b981; }
+.gBp { color: #2563eb; } .gB  { color: #3b82f6; } .gBm { color: #60a5fa; }
+.gCp { color: #d97706; } .gC  { color: #f59e0b; } .gCm { color: #fbbf24; }
+.gD  { color: #ef4444; } .gF  { color: #dc2626; }
+
+/* Info boxes */
+.info {
+  border-radius: 10px; padding: 11px 14px;
+  font-size: 0.84rem; margin-bottom: 12px;
+  display: flex; align-items: flex-start; gap: 8px; line-height: 1.55;
+}
+.info.blue   { background: #eff6ff; color: #1d4ed8; }
+.info.amber  { background: #fffbeb; color: #92400e; }
+.info.green  { background: #f0fdf4; color: #166534; }
+.info.red    { background: #fef2f2; color: #991b1b; }
+
+/* Needed score box */
+.needed-box { background: #f0f4ff; border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; }
+.needed-box .nl  { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-bottom: 8px; }
+.needed-box .ns  { font-size: 3.8rem; font-weight: 900; color: var(--primary); line-height: 1; margin-bottom: 8px; }
+.needed-box .nn  { font-size: 0.84rem; color: var(--muted); }
+
+/* Scenario table */
+.stbl { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.stbl th { text-align: left; font-size: 0.72rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.06em; padding-bottom: 10px; border-bottom: 1px solid #f3f4f6; font-weight: 600; }
+.stbl th:last-child { text-align: right; }
+.stbl td { padding: 9px 0; border-bottom: 1px solid #f9fafb; vertical-align: middle; }
+.stbl tr:last-child td { border-bottom: none; }
+.stbl td:last-child { text-align: right; }
+
+.tag-r { display:inline-block; font-size:0.68rem; background:#ede9fe; color:#5b21b6; border-radius:4px; padding:1px 6px; margin-left:5px; font-weight:600; }
+
+.divider { height:1px; background:#f3f4f6; margin:16px 0; }
+
+@media(max-width:480px){
+  .header h1  { font-size:1.4rem; }
+  .big-grade  { font-size:3.2rem; min-width:60px; }
+  .needed-box .ns { font-size:3rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="header-icon">🎓</span>
+  <h1>Final Grade Predictor</h1>
+  <p>Type a score (0–100) or <strong>E</strong> for unknown scores — they'll be estimated at 83.</p>
+</div>
+
+<div class="container">
+
+  <!-- Participation -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon ic-purple">📋</div>
+      <div class="card-title">
+        <h2>Participation</h2>
+        <div class="sub">5% of total grade</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <label>Syllabus Quiz</label>
+        <span class="pct">2%</span>
+        <input class="score-input" id="syllabus" placeholder="E" oninput="markEst(this)">
+      </div>
+      <div class="row">
+        <label>Class Attendance</label>
+        <span class="pct">3%</span>
+        <input class="score-input" id="attendance" placeholder="E" oninput="markEst(this)">
+      </div>
+    </div>
+  </div>
+
+  <!-- Online Lab -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon ic-teal">🧪</div>
+      <div class="card-title">
+        <h2>Online Lab</h2>
+        <div class="sub">10% of total grade</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <label>Lab Attendance</label>
+        <span class="pct">3.3%</span>
+        <input class="score-input" id="lab_attend" placeholder="E" oninput="markEst(this)">
+      </div>
+      <div class="row">
+        <label>Lab Completion</label>
+        <span class="pct">6.7%</span>
+        <input class="score-input" id="lab_complete" placeholder="E" oninput="markEst(this)">
+      </div>
+      <p class="hint">Lab score = Attendance × 33% + Completion × 67%</p>
+    </div>
+  </div>
+
+  <!-- Homework -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon ic-blue">📚</div>
+      <div class="card-title">
+        <h2>Homework</h2>
+        <div class="sub">13% of total grade</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <label>PrairieLearn Non-lab HW</label>
+        <span class="pct">8%</span>
+        <input class="score-input" id="pl_hw" placeholder="E" oninput="markEst(this)">
+      </div>
+      <div class="row">
+        <label>PrairieLearn Lab HW</label>
+        <span class="pct">5%</span>
+        <input class="score-input" id="pl_lab_hw" placeholder="E" oninput="markEst(this)">
+      </div>
+    </div>
+  </div>
+
+  <!-- Python Quizzes -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon ic-orange">🐍</div>
+      <div class="card-title">
+        <h2>Python Quizzes</h2>
+        <div class="sub">6% of total grade · 3% each</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <label>Python Quiz 1</label>
+        <span class="pct">3%</span>
+        <input class="score-input" id="pq1" placeholder="E" oninput="markEst(this)">
+      </div>
+      <div class="row">
+        <label>Python Quiz 2</label>
+        <span class="pct">3%</span>
+        <input class="score-input" id="pq2" placeholder="E" oninput="markEst(this)">
+      </div>
+    </div>
+  </div>
+
+  <!-- Midterms -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon ic-red">📝</div>
+      <div class="card-title">
+        <h2>Midterm Exams</h2>
+        <div class="sub">48% of total grade · 16% each</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <label>Midterm 1</label>
+        <span class="pct">16%</span>
+        <input class="score-input" id="m1" placeholder="E" oninput="markEst(this)">
+      </div>
+      <div class="row">
+        <label>Midterm 2</label>
+        <span class="pct">16%</span>
+        <input class="score-input" id="m2" placeholder="E" oninput="markEst(this)">
+      </div>
+      <div class="row">
+        <label>Midterm 3</label>
+        <span class="pct">16%</span>
+        <input class="score-input" id="m3" placeholder="E" oninput="markEst(this)">
+      </div>
+    </div>
+  </div>
+
+  <!-- Final Exam + Target -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon ic-gold">🏆</div>
+      <div class="card-title">
+        <h2>Final Exam</h2>
+        <div class="sub">18% of total grade</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row" style="margin-bottom:14px">
+        <label>Final Exam Score <span style="color:#b0b7c3;font-size:0.76rem">— leave blank to use target grade below</span></label>
+        <span class="pct">18%</span>
+        <input class="score-input" id="final" placeholder="E" oninput="markEst(this)">
+      </div>
+      <p class="section-label">Target grade (if Final unknown)</p>
+      <div class="grade-btns">
+        <button class="gb active" data-g="A"   onclick="pickGrade(this)">A</button>
+        <button class="gb"        data-g="A-"  onclick="pickGrade(this)">A−</button>
+        <button class="gb"        data-g="B+"  onclick="pickGrade(this)">B+</button>
+        <button class="gb"        data-g="B"   onclick="pickGrade(this)">B</button>
+        <button class="gb"        data-g="B-"  onclick="pickGrade(this)">B−</button>
+        <button class="gb"        data-g="C+"  onclick="pickGrade(this)">C+</button>
+        <button class="gb"        data-g="C"   onclick="pickGrade(this)">C</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="calc-btn" onclick="calculate()">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="2" width="16" height="20" rx="2"/>
+      <line x1="8" y1="6" x2="16" y2="6"/>
+      <line x1="8" y1="10" x2="16" y2="10"/>
+      <line x1="8" y1="14" x2="11" y2="14"/>
+      <polyline points="14 19 16 21 20 17"/>
+    </svg>
+    Calculate My Grade
+  </button>
+
+  <!-- RESULTS -->
+  <div id="results">
+
+    <!-- Current standing -->
+    <div class="card" style="margin-top:20px">
+      <div class="card-header">
+        <div class="card-icon ic-indigo">📊</div>
+        <div class="card-title">
+          <h2>Current Standing</h2>
+          <div class="sub">Excluding Final Exam</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="est-note" style="display:none"></div>
+        <div class="prog-wrap">
+          <div class="prog-labels">
+            <span>Points earned so far</span>
+            <span id="lbl-sofar"></span>
+          </div>
+          <div class="prog-bg">
+            <div class="prog-fill" id="bar-sofar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Known final result -->
+    <div id="card-known" class="card" style="display:none">
+      <div class="card-header">
+        <div class="card-icon ic-gold">🎯</div>
+        <div class="card-title">
+          <h2>Final Result</h2>
+          <div class="sub">With your actual Final Exam score</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="rep-known" class="info blue" style="display:none"></div>
+        <div class="grade-display">
+          <div class="big-grade" id="badge-grade"></div>
+          <div class="grade-meta">
+            <div class="pts" id="lbl-total"></div>
+            <div class="label">out of 100 points</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Target mode result -->
+    <div id="card-target" class="card" style="display:none">
+      <div class="card-header">
+        <div class="card-icon ic-gold">🎯</div>
+        <div class="card-title">
+          <h2>Needed Final Score</h2>
+          <div class="sub" id="target-sub"></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="needed-box">
+          <div class="nl">Final Exam score needed</div>
+          <div class="ns" id="needed-score"></div>
+          <div class="nn" id="needed-note"></div>
+        </div>
+        <div id="rep-target" class="info blue" style="display:none"></div>
+        <div class="divider"></div>
+        <p class="section-label" style="margin-top:0">All scenarios</p>
+        <table class="stbl">
+          <thead><tr><th>Final Score</th><th>Total Points</th><th>Grade</th></tr></thead>
+          <tbody id="scenario-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /results -->
+</div><!-- /container -->
+
+<script>
+let selGrade = "A";
+
+function pickGrade(btn) {
+  document.querySelectorAll(".gb").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  selGrade = btn.dataset.g;
+}
+
+function markEst(inp) {
+  const v = inp.value.trim().toLowerCase();
+  inp.classList.toggle("est", v === "e" || v === "");
+}
+
+function parse(id) {
+  const raw = document.getElementById(id).value.trim().toLowerCase();
+  if (!raw || raw === "e") return { v: 83, est: true };
+  const n = parseFloat(raw);
+  if (isNaN(n) || n < 0 || n > 100) return { v: 83, est: true };
+  return { v: n, est: false };
+}
+
+function letterGrade(s) {
+  if (s >= 93) return "A";  if (s >= 90) return "A-";
+  if (s >= 87) return "B+"; if (s >= 83) return "B";
+  if (s >= 80) return "B-"; if (s >= 77) return "C+";
+  if (s >= 73) return "C";  if (s >= 70) return "C-";
+  if (s >= 67) return "D+"; if (s >= 63) return "D";
+  if (s >= 60) return "D-"; return "F";
+}
+
+function gc(g) {
+  return ({A:"gA","A-":"gAm","B+":"gBp",B:"gB","B-":"gBm","C+":"gCp",C:"gC","C-":"gCm","D+":"gD",D:"gD","D-":"gD",F:"gF"})[g] || "";
+}
+
+const thresholds = {A:93,"A-":90,"B+":87,B:83,"B-":80,"C+":77,C:73};
+
+function computeTotal(ne, m1, m2, m3, f) {
+  const ms = [m1, m2, m3];
+  const minV = Math.min(...ms), minI = ms.indexOf(minV);
+  let replaced = false;
+  if (f > minV) { ms[minI] = f; replaced = true; }
+  return { total: ne + ms.reduce((a,b)=>a+b,0)*0.16 + f*0.18, replaced, minI, minV };
+}
+
+function neededFinal(target, ne, m1, m2, m3) {
+  const sumM = m1+m2+m3, minV = Math.min(m1,m2,m3);
+  const minI = [m1,m2,m3].indexOf(minV);
+  const fA = (target - ne - sumM*0.16) / 0.18;
+  if (fA <= minV) return { score: fA, replaces: false, minI, minV };
+  const fB = (target - ne - (sumM-minV)*0.16) / 0.34;
+  return { score: fB, replaces: true, minI, minV };
+}
+
+function calculate() {
+  const syllabus=parse("syllabus"), att=parse("attendance"),
+        la=parse("lab_attend"),     lc=parse("lab_complete"),
+        plh=parse("pl_hw"),         pll=parse("pl_lab_hw"),
+        pq1=parse("pq1"),           pq2=parse("pq2"),
+        m1=parse("m1"), m2=parse("m2"), m3=parse("m3");
+
+  const finalRaw = document.getElementById("final").value.trim().toLowerCase();
+  const hasFinal = finalRaw !== "" && finalRaw !== "e";
+  const fInput = hasFinal ? parse("final") : null;
+
+  const labScore = la.v*0.33 + lc.v*0.67;
+  const pqAvg    = (pq1.v + pq2.v) / 2;
+  const ne = syllabus.v*0.02 + att.v*0.03 + labScore*0.10
+           + plh.v*0.08 + pll.v*0.05 + pqAvg*0.06;
+  const soFar = ne + (m1.v+m2.v+m3.v)*0.16;
+
+  const fieldMap = [
+    [syllabus,"Syllabus Quiz"],[att,"Class Attendance"],
+    [la,"Lab Attendance"],[lc,"Lab Completion"],
+    [plh,"PL Non-lab HW"],[pll,"PL Lab HW"],
+    [pq1,"Python Quiz 1"],[pq2,"Python Quiz 2"],
+    [m1,"Midterm 1"],[m2,"Midterm 2"],[m3,"Midterm 3"]
+  ];
+  const estNames = fieldMap.filter(([f])=>f.est).map(([,n])=>n);
+  const estEl = document.getElementById("est-note");
+  if (estNames.length) {
+    estEl.style.display = "flex";
+    estEl.className = "info amber";
+    estEl.innerHTML = `⚠️ <span>Estimated at <strong>83</strong>: ${estNames.join(", ")}</span>`;
+  } else {
+    estEl.style.display = "none";
+  }
+
+  document.getElementById("lbl-sofar").textContent = soFar.toFixed(2)+" / 82 pts";
+  document.getElementById("bar-sofar").style.width = Math.min(100, soFar/82*100).toFixed(1)+"%";
+  document.getElementById("results").style.display = "block";
+
+  if (hasFinal) {
+    document.getElementById("card-known").style.display = "block";
+    document.getElementById("card-target").style.display = "none";
+
+    const {total,replaced,minI,minV} = computeTotal(ne,m1.v,m2.v,m3.v,fInput.v);
+    const g = letterGrade(total);
+
+    const repEl = document.getElementById("rep-known");
+    if (replaced) {
+      repEl.style.display = "flex";
+      repEl.innerHTML = `ℹ️ <span>Final (<strong>${fInput.v.toFixed(1)}</strong>) > Midterm ${minI+1} (${minV.toFixed(1)}) — Midterm ${minI+1} is replaced. Final now counts for <strong>34%</strong> total.</span>`;
+    } else {
+      repEl.style.display = "none";
+    }
+
+    const badge = document.getElementById("badge-grade");
+    badge.textContent = g; badge.className = "big-grade "+gc(g);
+    document.getElementById("lbl-total").textContent = total.toFixed(2)+" pts";
+
+  } else {
+    document.getElementById("card-known").style.display = "none";
+    document.getElementById("card-target").style.display = "block";
+
+    const thr = thresholds[selGrade] ?? 60;
+    const {score,replaces,minI,minV} = neededFinal(thr,ne,m1.v,m2.v,m3.v);
+
+    document.getElementById("target-sub").textContent = `To achieve ${selGrade} (≥ ${thr} pts)`;
+
+    const nsEl = document.getElementById("needed-score");
+    const nnEl = document.getElementById("needed-note");
+    const rtEl = document.getElementById("rep-target");
+
+    if (score <= 0) {
+      nsEl.textContent = "✓ Done"; nsEl.style.color = "#059669";
+      nnEl.textContent = `You've already secured an ${selGrade} — congratulations!`;
+      rtEl.style.display = "none";
+    } else if (score > 100) {
+      nsEl.textContent = "> 100"; nsEl.style.color = "#dc2626";
+      nnEl.textContent = `An ${selGrade} is not achievable even with a perfect Final Exam.`;
+      rtEl.style.display = "none";
+    } else {
+      nsEl.textContent = score.toFixed(1); nsEl.style.color = "";
+      nnEl.textContent = `Score ${score.toFixed(1)} or higher on the Final to earn ${selGrade}.`;
+      if (replaces) {
+        rtEl.style.display = "flex";
+        rtEl.innerHTML = `ℹ️ <span>At this score, Final (<strong>${score.toFixed(1)}</strong>) > Midterm ${minI+1} (${minV.toFixed(1)}) — <strong>Midterm ${minI+1} will be replaced</strong>. Final counts for 34% total.</span>`;
+      } else {
+        rtEl.style.display = "none";
+      }
+    }
+
+    const tbody = document.getElementById("scenario-body");
+    tbody.innerHTML = "";
+    for (const f of [55,60,65,70,75,80,85,90,95,100]) {
+      const {total,replaced,minI:ri} = computeTotal(ne,m1.v,m2.v,m3.v,f);
+      const g = letterGrade(total);
+      const rt = replaced ? `<span class="tag-r">replaces MT${ri+1}</span>` : "";
+      tbody.innerHTML += `<tr><td><strong>${f}</strong>${rt}</td><td>${total.toFixed(2)}</td><td><strong class="${gc(g)}">${g}</strong></td></tr>`;
+    }
+  }
+
+  document.getElementById("results").scrollIntoView({behavior:"smooth",block:"start"});
+}
+</script>
+</body>
+</html>
